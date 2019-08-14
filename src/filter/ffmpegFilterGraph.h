@@ -5,7 +5,6 @@
 #include "ffmpegFilterSinks.h"
 #include "ffmpegFilterSources.h"
 
-// #include "mexClassHandler.h"
 // #include "ffmpegPtrs.h"
 // #include "ffmpegAvRedefine.h"
 // #include "ffmpegAVFramePtrBuffer.h"

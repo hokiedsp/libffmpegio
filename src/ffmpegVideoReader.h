@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ffmpegBase.h"
-// #include "mexClassHandler.h"
 // #include "ffmpegPtrs.h"
 #include "ffmpegAvRedefine.h"
 // #include "ffmpegAVFramePtrBuffer.h"

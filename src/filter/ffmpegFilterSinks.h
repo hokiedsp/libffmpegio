@@ -5,7 +5,6 @@
 #include "../ffmpegException.h"
 #include "../ffmpegStreamOutput.h"
 
-// #include "mexClassHandler.h"
 // #include "ffmpegPtrs.h"
 // #include "ffmpegAvRedefine.h"
 // #include "ffmpegAVFramePtrBuffer.h"
