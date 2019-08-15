@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../ffmpegBase.h"
 #include "../ffmpegFormatInput.h"
 #include "ffmpegFilterSinks.h"
 #include "ffmpegFilterSources.h"
@@ -31,7 +30,7 @@ namespace ffmpeg
 {
 namespace filter
 {
-class Graph : public ffmpeg::Base
+class Graph
 {
   struct SourceInfo;
   struct SinkInfo;

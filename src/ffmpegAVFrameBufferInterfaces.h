@@ -5,7 +5,6 @@ extern "C"
 #include <libavutil/frame.h>
 }
 
-#include "ffmpegBase.h"
 #include "ffmpegMediaStructs.h"
 
 #include <chrono>

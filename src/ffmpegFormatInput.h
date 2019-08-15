@@ -2,7 +2,6 @@
 
 #include <chrono>
 
-#include "ffmpegBase.h"
 #include "ffmpegStreamInput.h"
 #include "ffmpegStreamIterator.h"
 
@@ -15,7 +14,7 @@ extern "C"
 namespace ffmpeg
 {
 
-class InputFormat : public Base
+class InputFormat
 {
   public:
   InputFormat(const std::string &filename = "");

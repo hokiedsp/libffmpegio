@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ffmpegBase.h"
 // #include "ffmpegAvRedefine.h"
 #include "ffmpegAVFrameBufferInterfaces.h"
 #include "ffmpegMediaHandlers.h"
@@ -19,7 +18,7 @@ namespace ffmpeg
 /**
  * \brief Class to manage AVStream
  */
-class BaseStream : public Base
+class BaseStream
 {
   public:
   BaseStream();
