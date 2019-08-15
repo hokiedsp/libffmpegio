@@ -3,6 +3,7 @@
 extern "C"
 {
 #include <libavutil/pixdesc.h> // av_get_pix_fmt_name()
+#include <libavutil/channel_layout.h> // av_get_pix_fmt_name()
 }
 
 #include "ffmpegMediaHandlerInterfaces.h"
