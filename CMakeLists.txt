@@ -51,13 +51,15 @@ if (LIBFFMPEGIO_SHARED)
   set_target_properties(sharedlib PROPERTIES OUTPUT_NAME libffmpegio)
   target_link_libraries(sharedlib PUBLIC ${FFMPEG_LIBRARIES})
   set_target_properties(sharedlib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION})
-  endif()
+  target_include_directories(sharedlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+endif()
 
 if (LIBFFMPEGIO_STATIC)
   add_library(staticlib STATIC $<TARGET_OBJECTS:objlib>)
   set_target_properties(staticlib PROPERTIES OUTPUT_NAME libffmpegio_static)
   target_link_libraries(staticlib PUBLIC ${FFMPEG_LIBRARIES})
   set_target_properties(staticlib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION})
+  target_include_directories(staticlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 endif()
 
 # Let's set compiler-specific flags
