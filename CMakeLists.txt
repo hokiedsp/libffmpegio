@@ -30,46 +30,52 @@ endif()
 # See https://blog.kitware.com/create-dlls-on-windows-without-declspec-using-new-cmake-export-all-feature/
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+# Create FFmpeg interface library
+if (NOT libffmpeg)
+  add_library(libffmpeg INTERFACE)
+  target_link_libraries(libffmpeg INTERFACE ${FFMPEG_LIBRARIES})
+  target_include_directories(libffmpeg INTERFACE ${FFMPEG_INCLUDE_DIR})
+  message(STATUS "${FFMPEG_INCLUDE_DIR}")
+endif()
+
 # Create object library target
 add_library(objlib OBJECT "")
 if (LIBFFMPEGIO_SHARED)
   set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
 endif()
-target_link_libraries(objlib PUBLIC ${FFMPEG_LIBRARIES})
-target_include_directories(objlib PUBLIC ${FFMPEG_INCLUDE_DIR})
+target_link_libraries(objlib PUBLIC libffmpeg)
+target_include_directories(objlib PUBLIC libffmpeg)
 
 include(GenerateExportHeader)
 generate_export_header(objlib)
-target_include_directories(objlib PUBLIC ${CMAKE_BINARY_DIR}/exports)
+target_include_directories(objlib PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/exports)
 
 # CMakeLists.txt in src adds all the files to objlib
 add_subdirectory("src")
 
 # Create shared and static libraries from the object library
 if (LIBFFMPEGIO_SHARED)
-  add_library(sharedlib SHARED $<TARGET_OBJECTS:objlib>)
-  set_target_properties(sharedlib PROPERTIES OUTPUT_NAME libffmpegio)
-  target_link_libraries(sharedlib PUBLIC ${FFMPEG_LIBRARIES})
-  set_target_properties(sharedlib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION})
-  target_include_directories(sharedlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-endif()
+  add_library(libffmpegio SHARED $<TARGET_OBJECTS:objlib>)
+  target_link_libraries(libffmpegio PUBLIC libffmpeg)
+  set_target_properties(libffmpegio PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION})
+  target_include_directories(libffmpegio INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  endif()
 
 if (LIBFFMPEGIO_STATIC)
-  add_library(staticlib STATIC $<TARGET_OBJECTS:objlib>)
-  set_target_properties(staticlib PROPERTIES OUTPUT_NAME libffmpegio_static)
-  target_link_libraries(staticlib PUBLIC ${FFMPEG_LIBRARIES})
-  set_target_properties(staticlib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION})
-  target_include_directories(staticlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  add_library(libffmpegio_static STATIC $<TARGET_OBJECTS:objlib>)
+  target_link_libraries(libffmpegio_static PUBLIC libffmpeg)
+  set_target_properties(libffmpegio_static PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION})
+  target_include_directories(libffmpegio_static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 endif()
 
 # Let's set compiler-specific flags
 # if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 #     # G++
-#     target_compile_options(sharedlib PRIVATE -Wall -Wextra)
+#     target_compile_options(libffmpegio PRIVATE -Wall -Wextra)
 # elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 #     # MSVC
-#     target_compile_options(sharedlib PRIVATE /EHsc /MTd /W2 /c)
+#     target_compile_options(libffmpegio PRIVATE /EHsc /MTd /W2 /c)
 #     # Set the DLLEXPORT variable to export symbols
-#     target_compile_definitions(sharedlib PRIVATE WIN_EXPORT)
+#     target_compile_definitions(libffmpegio PRIVATE WIN_EXPORT)
 # endif()
 
