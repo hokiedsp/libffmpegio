@@ -100,12 +100,14 @@ endif()
 # setup install
 
 # install shared library (no accompanying .lib)
-if (LIBFFMPEGIO_INSTALL_RUNTIME_DEST)
-  install(TARGETS libffmpegio RUNTIME DESTINATION ${LIBFFMPEGIO_INSTALL_RUNTIME_DEST}
-                              LIBRARY DESTINATION ${LIBFFMPEGIO_INSTALL_RUNTIME_DEST})
-else()
-  install(TARGETS libffmpegio RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-                              LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR})
+if (LIBFFMPEGIO_SHARED)
+  if (LIBFFMPEGIO_INSTALL_RUNTIME_DEST)
+    install(TARGETS libffmpegio RUNTIME DESTINATION ${LIBFFMPEGIO_INSTALL_RUNTIME_DEST}
+                                LIBRARY DESTINATION ${LIBFFMPEGIO_INSTALL_RUNTIME_DEST})
+  else()
+    install(TARGETS libffmpegio RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR})
+  endif()
 endif()
 
 if (LIBFFMPEGIO_INSTALL_DEV)
