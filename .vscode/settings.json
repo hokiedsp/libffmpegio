@@ -72,5 +72,8 @@
         "xhash": "cpp",
         "iostream": "cpp",
         "numeric": "cpp"
-    }
+    },
+    "cmake.configureArgs": [
+        "-DCMAKE_INSTALL_PREFIX=D:\\Users\\tikuma\\Desktop\\libffmpegio"
+    ]
 }
