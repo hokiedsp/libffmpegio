@@ -374,7 +374,7 @@ int Reader<AVFrameQue>::addStream(const std::string &spec,
   int id = file.getStreamId(spec, related_stream_id);
   if (id == AVERROR_STREAM_NOT_FOUND || file.isStreamActive(id))
     throw InvalidStreamSpecifier(spec);
-  return add_stream(id);
+  return add_stream(id, args...);
 }
 
 template <typename AVFrameQue>
