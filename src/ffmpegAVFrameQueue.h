@@ -147,8 +147,7 @@ class AVFrameQueue : public IAVFrameBuffer
   bool empty() noexcept
   {
     MutexLockType lock(mutex);
-    return !((que.size() > 1 && wr != que.begin()) ? (wr - 1)->populated
-                                                   : que.back().populated);
+    return que.empty() || !rd->populated;
   }
   bool full() noexcept
   {
@@ -317,7 +316,9 @@ class AVFrameQueue : public IAVFrameBuffer
   void pop()
   {
     MutexLockType lock(mutex);
-    cv_tx.wait(lock, [this]() -> bool { return killnow || readyToPop_threadunsafe(); });
+    cv_tx.wait(lock, [this]() -> bool {
+      return killnow || readyToPop_threadunsafe();
+    });
     if (!killnow) pop_threadunsafe(nullptr, nullptr);
   }
 
@@ -333,14 +334,15 @@ class AVFrameQueue : public IAVFrameBuffer
   {
     int64_t Iwr = wr - que.begin();
     int64_t Ird = rd - que.begin();
-    if (rd > wr) ++Ird;
 
-    if (que.empty() || wr == que.end() - 1)
-      que.push_back({av_frame_alloc(), false, false});
-    else
+    if (que.empty() || !Iwr)
+    { que.push_back({av_frame_alloc(), false, false}); } else
+    {
+      if (rd > wr) ++Ird;
       que.insert(wr + 1, {av_frame_alloc(), false, false});
+    }
 
-    wr = que.begin() + Iwr;
+    wr = Iwr ? que.begin() + Iwr : que.end() - 1;
     rd = que.begin() + Ird;
 
     // advance write pointer to the new element for the subsequent pushing
