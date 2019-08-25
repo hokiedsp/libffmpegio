@@ -163,6 +163,12 @@ template <typename AVFrameQue> class Reader
   template <class Chrono_t> Chrono_t getTimeStamp(int stream_id);
 
   /**
+   * \brief get number of frames in the buffer
+   */
+  size_t getNumBufferedFrames(int stream_id);
+  size_t getNumBufferedFrames(const std::string &spec);
+
+  /**
    * \brief Adjust to the specified timestamp
    */
   template <class Chrono_t>
@@ -193,8 +199,6 @@ template <typename AVFrameQue> class Reader
    */
   template <class PostOp, typename... Args>
   void setPostOp(const int id, Args... args);
-
-  size_t getNumBufferedFrames(const std::string &spec);
 
   protected:
   /**
@@ -696,6 +700,20 @@ inline bool Reader<AVFrameQue>::readNextFrame(AVFrame *frame,
 }
 
 template <typename AVFrameQue>
+inline size_t Reader<AVFrameQue>::getNumBufferedFrames(int stream_id)
+{
+  if (!active || file.atEndOfFile()) return 0;
+  return bufs.at(file.getStreamId(stream_id)).size();
+}
+
+template <typename AVFrameQue>
+inline size_t Reader<AVFrameQue>::getNumBufferedFrames(const std::string &spec)
+{
+  if (!active || file.atEndOfFile()) return 0;
+  return bufs.at(file.getStreamId(spec)).size();
+}
+
+template <typename AVFrameQue>
 template <class Chrono_t>
 inline Chrono_t Reader<AVFrameQue>::getTimeStamp()
 {
@@ -873,14 +891,6 @@ inline void Reader<AVFrameQue>::emplace_postop(AVFrameQue &buf, Args... args)
     postops[&buf] = nullptr;
   }
   postops[&buf] = new PostOp(buf, args...);
-}
-
-template <typename AVFrameQue>
-inline size_t Reader<AVFrameQue>::getNumBufferedFrames(const std::string &spec)
-{
-  if (!active || file.atEndOfFile()) return 0;
-  auto &buf = get_buf(spec);
-  return buf.size();
 }
 
 } // namespace ffmpeg
