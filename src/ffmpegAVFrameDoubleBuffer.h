@@ -172,8 +172,7 @@ inline size_t
 AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType>::size() noexcept
 {
   MutexLockType lock(mutex);
-  return std::reduce(buffers.begin(), buffers.end(), 0ull,
-                     [](auto cnt, auto &buf) { return cnt + buf.size(); });
+  return sndr->size();
 }
 
 template <typename MutexType, typename CondVarType, typename MutexLockType>
@@ -181,8 +180,7 @@ inline bool
 AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType>::empty() noexcept
 {
   MutexLockType lock(mutex);
-  return std::all_of(buffers.begin(), buffers.end(),
-                     [](auto &buf) { return buf.empty(); });
+  return sndr->empty();
 }
 
 template <typename MutexType, typename CondVarType, typename MutexLockType>
