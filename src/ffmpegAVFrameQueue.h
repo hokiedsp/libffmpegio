@@ -332,21 +332,24 @@ class AVFrameQueue : public IAVFrameBuffer
   }
   void expand()
   {
-    int64_t Iwr = wr - que.begin();
-    int64_t Ird = rd - que.begin();
-
-    if (que.empty() || !Iwr)
-    { que.push_back({av_frame_alloc(), false, false}); } else
+    if (que.empty())
     {
-      if (rd > wr) ++Ird;
-      que.insert(wr + 1, {av_frame_alloc(), false, false});
+      que.push_back({av_frame_alloc(), false, false});
+      wr = rd = que.begin();
     }
+    else
+    {
+      int64_t Iwr = wr - que.begin();
+      int64_t Ird = rd - que.begin();
 
-    wr = Iwr ? que.begin() + Iwr : que.end() - 1;
-    rd = que.begin() + Ird;
+      if (wr->populated) ++Iwr; // if que was full, set writer to the new element
+      if (rd > wr) ++Ird; // if reader is ahead, offset must account for the new element
+      
+      que.insert(wr + 1, {av_frame_alloc(), false, false});
 
-    // advance write pointer to the new element for the subsequent pushing
-    if (wr->populated && ++wr == que.end()) wr = que.begin();
+      rd = que.begin() + Ird;
+      wr = que.begin() + Iwr;
+    }
   }
 
   bool readyToPush_threadunsafe() { return dynamic || !wr->populated; }
@@ -445,5 +448,9 @@ class AVFrameQueue : public IAVFrameBuffer
 typedef AVFrameQueue<NullMutex, NullConditionVariable<NullMutex>,
                      NullUniqueLock<NullMutex>>
     AVFrameQueueST;
+
+typedef AVFrameQueue<Cpp11Mutex, Cpp11ConditionVariable,
+                     Cpp11UniqueLock<Cpp11Mutex>>
+    AVFrameQueueMT;
 
 } // namespace ffmpeg
