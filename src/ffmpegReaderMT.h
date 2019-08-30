@@ -53,13 +53,13 @@ inline void ReaderMT<BufferType>::seek(const Chrono_t t0, const bool exact_searc
   pause();
 
   // do the coarse search first
-  Reader<AVFrameDoubleBufferMT>::seek<Chrono_t>(t0, false);
+  Reader<BufferType>::seek<Chrono_t>(t0, false);
 
   // restart thread
   resume();
 
   // perform the exact search only after the thread has restarted
-  if (exact_search) Reader<AVFrameDoubleBufferMT>::purge_until<Chrono_t>(t0);
+  if (exact_search) Reader<BufferType>::purge_until<Chrono_t>(t0);
 }
 
 template<typename BufferType>
@@ -168,7 +168,7 @@ void ReaderMT<BufferType>::activate()
                     "used by the ffmpeg::ReaderMT object must be fixed size.");
 
   // ready the file & streams
-  Reader<AVFrameDoubleBufferMT>::activate();
+  Reader<BufferType>::activate();
 
   // start the thread
   start();
