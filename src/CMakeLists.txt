@@ -3,7 +3,7 @@ file(GLOB HEADERFILES LIST_DIRECTORIES FALSE RELATIVE ${LIBFFMPEGIO_SRC_DIR} "*.
 
 target_sources(objlib PRIVATE ffmpegStream.cpp ffmpegStreamInput.cpp 
                               ffmpegFormatInput.cpp ffmpegDump.cpp  
-                              ffmpegException.cpp ffmpegReaderMT.cpp
+                              ffmpegException.cpp
                       PUBLIC ${HEADERFILES})
 
 if (LIBFFMPEGIO_INSTALL_DEV)
