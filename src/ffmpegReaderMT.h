@@ -8,7 +8,7 @@ namespace ffmpeg
 {
 
 // single-thread media file reader
-template<typename BufferType>
+template <typename BufferType>
 class ReaderMT : public Reader<BufferType>, private ThreadBase
 {
   public:
@@ -45,9 +45,10 @@ class ReaderMT : public Reader<BufferType>, private ThreadBase
   void resume() override;
 };
 
-template<typename BufferType>
+template <typename BufferType>
 template <class Chrono_t>
-inline void ReaderMT<BufferType>::seek(const Chrono_t t0, const bool exact_search)
+inline void ReaderMT<BufferType>::seek(const Chrono_t t0,
+                                       const bool exact_search)
 {
   // stop thread before seek
   pause();
@@ -62,23 +63,20 @@ inline void ReaderMT<BufferType>::seek(const Chrono_t t0, const bool exact_searc
   if (exact_search) Reader<BufferType>::purge_until<Chrono_t>(t0);
 }
 
-template<typename BufferType>
-void ReaderMT<BufferType>::kill()
+template <typename BufferType> void ReaderMT<BufferType>::kill()
 {
   for (auto &buf : bufs) buf.second.kill();
   for (auto &buf : filter_outbufs) buf.second.kill();
 }
 
-template<typename BufferType>
-void ReaderMT<BufferType>::pause()
+template <typename BufferType> void ReaderMT<BufferType>::pause()
 {
   if (isPaused()) return;
   kill();
   ThreadBase::pause();
 }
 
-template<typename BufferType>
-void ReaderMT<BufferType>::resume()
+template <typename BufferType> void ReaderMT<BufferType>::resume()
 {
   if (!isPaused()) return;
   for (auto &buf : bufs) buf.second.clear();
@@ -86,8 +84,7 @@ void ReaderMT<BufferType>::resume()
   ThreadBase::resume();
 }
 
-template<typename BufferType>
-void ReaderMT<BufferType>::closeFile()
+template <typename BufferType> void ReaderMT<BufferType>::closeFile()
 {
   // stop the thread before closing
   stop();
@@ -97,8 +94,7 @@ void ReaderMT<BufferType>::closeFile()
 /**
  * \brief Worker thread function to read frames and stuff buffers
  */
-template<typename BufferType>
-void ReaderMT<BufferType>::thread_fcn()
+template <typename BufferType> void ReaderMT<BufferType>::thread_fcn()
 {
   std::unique_lock<std::mutex> thread_guard(thread_lock);
 
@@ -138,8 +134,7 @@ void ReaderMT<BufferType>::thread_fcn()
 /**
  * \brief Blocks until at least one previously empty read buffer becomes ready
  */
-template<typename BufferType>
-bool ReaderMT<BufferType>::read_next_packet()
+template <typename BufferType> bool ReaderMT<BufferType>::read_next_packet()
 {
   // cannot read unless thread is active
   if (status != ACTIVE) return false;
@@ -153,8 +148,7 @@ bool ReaderMT<BufferType>::read_next_packet()
   return !pbuf_chk;
 }
 
-template<typename BufferType>
-void ReaderMT<BufferType>::activate()
+template <typename BufferType> void ReaderMT<BufferType>::activate()
 {
   if (active) return;
 
@@ -175,6 +169,15 @@ void ReaderMT<BufferType>::activate()
 
   // wait till thread starts
   waitTillInitialized();
+
+  if (filter_graph)
+  {
+    // then update media parameters of the sinks
+    for (auto &buf : filter_outbufs)
+    { 
+      buf.second.peekToPop();
+      dynamic_cast<filter::SinkBase &>(buf.second.getSrc()).sync(); } 
+      }
 }
 
 } // namespace ffmpeg
