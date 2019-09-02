@@ -5,19 +5,6 @@
 #include "../ffmpegException.h"
 #include "../ffmpegStreamOutput.h"
 
-// #include "ffmpegPtrs.h"
-// #include "ffmpegAvRedefine.h"
-// #include "ffmpegAVFramePtrBuffer.h"
-// #include "ffmpegFrameBuffers.h"
-
-extern "C"
-{
-  // #include <libavfilter/avfiltergraph.h>
-  // #include <libavcodec/avcodec.h>
-  // #include <libavformat/avformat.h>
-  // #include <libavutil/pixdesc.h>
-}
-
 #include <vector>
 
 namespace ffmpeg
@@ -25,7 +12,9 @@ namespace ffmpeg
 namespace filter
 {
 
-class SinkBase : public EndpointBase, public IAVFrameSource
+class SinkBase : public EndpointBase,
+                 virtual public MediaHandler,
+                 public IAVFrameSource
 {
   public:
   SinkBase(Graph &fg,

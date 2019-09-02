@@ -59,7 +59,7 @@ class MediaHandler : virtual public IMediaHandler
   }
 };
 
-struct VideoHandler : public MediaHandler, public IVideoHandler
+struct VideoHandler : virtual public MediaHandler, public IVideoHandler
 {
   VideoHandler(const AVRational &tb = {0, 0},
                const AVPixelFormat fmt = AV_PIX_FMT_NONE, const int w = 0,
@@ -117,7 +117,7 @@ struct VideoHandler : public MediaHandler, public IVideoHandler
   VideoParams &vparams;
 };
 
-struct AudioHandler : protected MediaHandler, public IAudioHandler
+struct AudioHandler : virtual public MediaHandler, public IAudioHandler
 {
   AudioHandler(const AVRational &tb = {0, 0},
                const AVSampleFormat fmt = AV_SAMPLE_FMT_NONE,
