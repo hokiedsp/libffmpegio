@@ -169,15 +169,6 @@ template <typename BufferType> void ReaderMT<BufferType>::activate()
 
   // wait till thread starts
   waitTillInitialized();
-
-  if (filter_graph)
-  {
-    // then update media parameters of the sinks
-    for (auto &buf : filter_outbufs)
-    { 
-      buf.second.peekToPop();
-      dynamic_cast<filter::SinkBase &>(buf.second.getSrc()).sync(); } 
-      }
 }
 
 } // namespace ffmpeg

@@ -552,26 +552,14 @@ template <typename AVFrameQue> void Reader<AVFrameQue>::activate()
     filter_graph->configure();
   }
 
-  // // read frames until all the buffers have at least one frame
-  // while (!file.atEndOfFile() &&
-  //        std::any_of(bufs.begin(), bufs.end(),
-  //                    [](auto &buf) { return buf.second.empty(); }))
-  //   read_next_packet();
-
-  // if (filter_graph)
-  // {
-  //   // also make sure all the filter graph sink buffers are filled
-  //   while (!file.atEndOfFile() &&
-  //          std::any_of(filter_outbufs.begin(), filter_outbufs.end(),
-  //                      [](auto &buf) { return buf.second.empty(); }))
-  //     read_next_packet();
-
-  // // then update media parameters of the sinks
-  // for (auto &buf : filter_outbufs)
-  // { dynamic_cast<filter::SinkBase &>(buf.second.getSrc()).sync(); } }
+  // then update media parameters of the sinks
+  if (filter_graph)
+  {
+    for (auto &buf : filter_outbufs)
+    { dynamic_cast<filter::SinkBase &>(buf.second.getSrc()).sync(); } }
 
   active = true;
-}
+} // namespace ffmpeg
 
 template <typename AVFrameQue>
 inline void Reader<AVFrameQue>::openFile(const std::string &url)
