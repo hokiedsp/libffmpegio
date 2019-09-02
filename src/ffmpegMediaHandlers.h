@@ -2,8 +2,8 @@
 
 extern "C"
 {
-#include <libavutil/pixdesc.h> // av_get_pix_fmt_name()
 #include <libavutil/channel_layout.h> // av_get_pix_fmt_name()
+#include <libavutil/pixdesc.h>        // av_get_pix_fmt_name()
 }
 
 #include "ffmpegMediaHandlerInterfaces.h"
@@ -21,7 +21,7 @@ class MediaHandler : virtual public IMediaHandler
   protected:
   MediaParams *params; // set to the allocated object by derived class,
                        // destroyed by this class
-  MediaHandler(MediaParams *p)
+  MediaHandler(MediaParams *p = nullptr)
       : params(p) {} // only constructible via derived class
 
   public:
@@ -64,9 +64,8 @@ struct VideoHandler : virtual public MediaHandler, public IVideoHandler
   VideoHandler(const AVRational &tb = {0, 0},
                const AVPixelFormat fmt = AV_PIX_FMT_NONE, const int w = 0,
                const int h = 0, const AVRational &sar = {0, 0})
-      : MediaHandler(new VideoParams(tb, fmt, w, h, sar)),
-        vparams(*static_cast<VideoParams *>(params))
   {
+    if (!params) params = new VideoParams(tb, fmt, w, h, sar);
   }
 
   virtual void setMediaParams(const MediaParams &new_params) override
@@ -74,7 +73,10 @@ struct VideoHandler : virtual public MediaHandler, public IVideoHandler
     *params = static_cast<const VideoParams &>(new_params);
   }
 
-  AVPixelFormat getFormat() const override { return vparams.format; }
+  AVPixelFormat getFormat() const override
+  {
+    return static_cast<VideoParams *>(params)->format;
+  }
   std::string getFormatName() const override
   {
     return av_get_pix_fmt_name(getFormat());
@@ -83,38 +85,53 @@ struct VideoHandler : virtual public MediaHandler, public IVideoHandler
   {
     return *av_pix_fmt_desc_get(getFormat());
   }
-  int getWidth() const override { return vparams.width; };
-  int getHeight() const override { return vparams.height; };
-  AVRational getSAR() const override { return vparams.sample_aspect_ratio; }
-  AVRational getFrameRate() const override { return vparams.frame_rate; }
+  int getWidth() const override
+  {
+    return static_cast<VideoParams *>(params)->width;
+  };
+  int getHeight() const override
+  {
+    return static_cast<VideoParams *>(params)->height;
+  };
+  AVRational getSAR() const override
+  {
+    return static_cast<VideoParams *>(params)->sample_aspect_ratio;
+  }
+  AVRational getFrameRate() const override
+  {
+    return static_cast<VideoParams *>(params)->frame_rate;
+  }
 
   virtual void setFormat(const AVPixelFormat fmt) override
   {
-    vparams.format = fmt;
+    static_cast<VideoParams *>(params)->format = fmt;
   }
-  virtual void setWidth(const int w) override { vparams.width = w; };
-  virtual void setHeight(const int h) override { vparams.height = h; };
+  virtual void setWidth(const int w) override
+  {
+    static_cast<VideoParams *>(params)->width = w;
+  };
+  virtual void setHeight(const int h) override
+  {
+    static_cast<VideoParams *>(params)->height = h;
+  };
   virtual void setSAR(const AVRational &sar) override
   {
-    vparams.sample_aspect_ratio = sar;
+    static_cast<VideoParams *>(params)->sample_aspect_ratio = sar;
   }
   virtual void setFrameRate(const AVRational &fs) override
   {
-    vparams.sample_aspect_ratio = fs;
+    static_cast<VideoParams *>(params)->sample_aspect_ratio = fs;
   }
 
   virtual bool ready() const override
   {
+    VideoParams &vparams = *static_cast<VideoParams *>(params);
     return MediaHandler::ready() && vparams.format != AV_PIX_FMT_NONE &&
            vparams.width != 0 && vparams.height != 0 &&
            vparams.sample_aspect_ratio.den != 0 &&
            vparams.sample_aspect_ratio.num != 0 &&
-           vparams.frame_rate.den != 0 &&
-           vparams.frame_rate.num != 0;
+           vparams.frame_rate.den != 0 && vparams.frame_rate.num != 0;
   }
-
-  private:
-  VideoParams &vparams;
 };
 
 struct AudioHandler : virtual public MediaHandler, public IAudioHandler
@@ -122,9 +139,8 @@ struct AudioHandler : virtual public MediaHandler, public IAudioHandler
   AudioHandler(const AVRational &tb = {0, 0},
                const AVSampleFormat fmt = AV_SAMPLE_FMT_NONE,
                const uint64_t layout = 0, const int fs = 0)
-      : MediaHandler(new AudioParams(tb, fmt, layout, fs)),
-        aparams(*static_cast<AudioParams *>(params))
   {
+    if (!params) params = new AudioParams(tb, fmt, layout, fs);
   }
 
   void setMediaParams(const MediaParams &new_params) override
@@ -132,56 +148,67 @@ struct AudioHandler : virtual public MediaHandler, public IAudioHandler
     *params = static_cast<const AudioParams &>(new_params);
   }
 
-  AVSampleFormat getFormat() const override { return aparams.format; }
+  AVSampleFormat getFormat() const override
+  {
+    return static_cast<AudioParams *>(params)->format;
+  }
   std::string getFormatName() const override
   {
     return av_get_sample_fmt_name(getFormat());
   }
   int getChannels() const override
   {
-    return av_get_channel_layout_nb_channels(aparams.channel_layout);
+    return av_get_channel_layout_nb_channels(
+        static_cast<AudioParams *>(params)->channel_layout);
   };
-  uint64_t getChannelLayout() const override { return aparams.channel_layout; };
+  uint64_t getChannelLayout() const override
+  {
+    return static_cast<AudioParams *>(params)->channel_layout;
+  };
   std::string getChannelLayoutName() const override
   {
-    int nb_channels = av_get_channel_layout_nb_channels(aparams.channel_layout);
+    int nb_channels = av_get_channel_layout_nb_channels(
+        static_cast<AudioParams *>(params)->channel_layout);
     if (nb_channels)
     {
       char buf[1024];
-      av_get_channel_layout_string(buf, 1024, nb_channels,
-                                   aparams.channel_layout);
+      av_get_channel_layout_string(
+          buf, 1024, nb_channels,
+          static_cast<AudioParams *>(params)->channel_layout);
       return buf;
     }
     else
       return "";
   }
-  int getSampleRate() const override { return aparams.sample_rate; }
+  int getSampleRate() const override
+  {
+    return static_cast<AudioParams *>(params)->sample_rate;
+  }
 
   virtual void setFormat(const AVSampleFormat fmt) override
   {
-    aparams.format = fmt;
+    static_cast<AudioParams *>(params)->format = fmt;
   }
   virtual void setChannelLayout(const uint64_t layout) override
   {
-    aparams.channel_layout = layout;
+    static_cast<AudioParams *>(params)->channel_layout = layout;
   };
   virtual void setChannelLayoutByName(const std::string &name) override
   {
-    aparams.channel_layout = av_get_channel_layout(name.c_str());
+    static_cast<AudioParams *>(params)->channel_layout =
+        av_get_channel_layout(name.c_str());
   }
   virtual void setSampleRate(const int fs) override
   {
-    aparams.sample_rate = fs;
+    static_cast<AudioParams *>(params)->sample_rate = fs;
   }
 
   virtual bool ready() const override
   {
+    AudioParams &aparams = *static_cast<AudioParams *>(params);
     return MediaHandler::ready() && aparams.format != AV_SAMPLE_FMT_NONE &&
            !aparams.channel_layout && aparams.sample_rate > 0;
   }
-
-  private:
-  AudioParams &aparams;
 };
 
 } // namespace ffmpeg
