@@ -16,7 +16,7 @@ class AVFrameQueue : public IAVFrameBuffer
 {
   public:
   AVFrameQueue(size_t N = 0)
-      : killnow(false), dynamic(N <= 1), src(nullptr), dst(nullptr)
+      : killnow(false), dynamic(N == 0), src(nullptr), dst(nullptr)
   {
     // set read/write pointers to the beginning
     wr = rd = que.begin();
@@ -129,7 +129,7 @@ class AVFrameQueue : public IAVFrameBuffer
       {
         av_frame_unref(it->frame);
         it->populated = false;
-        it->eof = false;
+          it->eof = false;
       }
     }
     wr = rd = que.begin();
@@ -344,7 +344,7 @@ class AVFrameQueue : public IAVFrameBuffer
 
       if (wr->populated) ++Iwr; // if que was full, set writer to the new element
       if (rd > wr) ++Ird; // if reader is ahead, offset must account for the new element
-      
+
       que.insert(wr + 1, {av_frame_alloc(), false, false});
 
       rd = que.begin() + Ird;
