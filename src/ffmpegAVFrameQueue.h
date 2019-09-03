@@ -35,7 +35,7 @@ class AVFrameQueue : public IAVFrameBuffer
     std::transform(that.que.begin(), that.que.end(), que.begin(),
                    [](const QueData &src) -> QueData {
                      AVFrame *frame;
-                     if (src.populated)
+                     if (src.populated && !src.eof)
                        frame = av_frame_clone(src.frame);
                      else
                        frame = av_frame_alloc();
@@ -75,7 +75,13 @@ class AVFrameQueue : public IAVFrameBuffer
     que(that.que.size());
     std::transform(that.que.begin(), that.que.end(), que.begin(),
                    [](const QueData &src) -> QueData {
-                     return {av_frame_clone(src.frame), src.eof, src.populated};
+                     AVFrame *frame;
+                     if (src.populated && !src.eof)
+                       frame = av_frame_clone(src.frame);
+                     else
+                       frame = av_frame_alloc();
+                     if (!frame) throw Exception("Failed to clone AVFrame.");
+                     return {frame, src.eof, src.populated};
                    });
     wr = que.begin() + (that.wr - that.que.begin());
     rd = que.begin() + (that.rd - that.que.begin());
@@ -127,9 +133,11 @@ class AVFrameQueue : public IAVFrameBuffer
     {
       if (it->populated)
       {
-        av_frame_unref(it->frame);
         it->populated = false;
+        if (it->eof)
           it->eof = false;
+        else
+          av_frame_unref(it->frame);
       }
     }
     wr = rd = que.begin();
@@ -342,8 +350,10 @@ class AVFrameQueue : public IAVFrameBuffer
       int64_t Iwr = wr - que.begin();
       int64_t Ird = rd - que.begin();
 
-      if (wr->populated) ++Iwr; // if que was full, set writer to the new element
-      if (rd > wr) ++Ird; // if reader is ahead, offset must account for the new element
+      if (wr->populated)
+        ++Iwr; // if que was full, set writer to the new element
+      if (rd > wr)
+        ++Ird; // if reader is ahead, offset must account for the new element
 
       que.insert(wr + 1, {av_frame_alloc(), false, false});
 
