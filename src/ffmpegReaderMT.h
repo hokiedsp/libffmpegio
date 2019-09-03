@@ -7,7 +7,7 @@
 namespace ffmpeg
 {
 
-// single-thread media file reader
+// multi-threaded media file reader
 template <typename BufferType>
 class ReaderMT : public Reader<BufferType>, private ThreadBase
 {
@@ -44,6 +44,18 @@ class ReaderMT : public Reader<BufferType>, private ThreadBase
   void pause() override;
   void resume() override;
 };
+
+template <typename BufferType> void ReaderMT<BufferType>::flush()
+{
+  // stop thread before seek
+  pause();
+
+  // flush the buffers
+  Reader<BufferType>::flush();
+
+  // restart thread
+  resume();
+}
 
 template <typename BufferType>
 template <class Chrono_t>
