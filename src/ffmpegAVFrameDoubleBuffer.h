@@ -84,7 +84,7 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
   void swap();
   void swap_threadunsafe();
 
-  typedef std::vector<AVFrameQueueST> Buffers;
+  typedef std::array<BufferType, 2> Buffers;
   Buffers buffers;
   typename Buffers::iterator rcvr; // receives new AVFrame
   typename Buffers::iterator sndr; // sends new stored AVFrame data
@@ -101,22 +101,18 @@ typedef AVFrameDoubleBuffer<Cpp11Mutex, Cpp11ConditionVariable,
                             Cpp11UniqueLock<Cpp11Mutex>>
     AVFrameDoubleBufferMT;
 
+typedef AVFrameDoubleBuffer<Cpp11Mutex, Cpp11ConditionVariable,
+                            Cpp11UniqueLock<Cpp11Mutex>, AVFrameStackST>
+    AVFrameDoubleBufferLIFOMT;
+
 /// IMPLEMENTATION ///
 
 template <typename MutexType, typename CondVarType, typename MutexLockType,
           typename BufferType>
 AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType,
                     BufferType>::AVFrameDoubleBuffer(size_t N)
-template <typename MutexType, typename CondVarType, typename MutexLockType>
-AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType>::AVFrameDoubleBuffer(
-    size_t N)
-    : killnow(false)
+    : killnow(false), buffers({BufferType(N), BufferType(N)})
 {
-  // set up a double buffer
-  buffers.reserve(2);
-  buffers.emplace_back(N);
-  buffers.emplace_back(N);
-
   // assign writer & reader
   rcvr = buffers.begin();
   sndr = rcvr + 1;
