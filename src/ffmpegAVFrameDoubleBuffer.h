@@ -1,10 +1,12 @@
 #pragma once
 
 #include "ffmpegAVFrameQueue.h"
+#include "ffmpegAVFrameStack.h"
 
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <functional>
 
 namespace ffmpeg
 {
@@ -70,6 +72,16 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
 
   bool eof();
 
+  template <typename CallbackType> void setReachedEofCallback(CallbackType cb)
+  {
+    cb_eof = cb;
+  }
+
+  template <typename CallbackType> void setBeforeSwapCallback(CallbackType cb)
+  {
+    cb_swap = cb;
+  }
+
   private:
   bool readyToPush_threadunsafe() { return !rcvr->full(); }
   bool readyToPop_threadunsafe() { return !sndr->empty(); }
@@ -94,6 +106,14 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
   MutexType mutex;
   CondVarType cv_swap;
   std::atomic_bool killnow;
+
+  std::function<void(
+      AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType> &)>
+      cb_eof;
+
+  std::function<void(
+      AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType> &)>
+      cb_swap;
 };
 
 // Predefined concrete types
@@ -338,11 +358,12 @@ template <typename MutexType, typename CondVarType, typename MutexLockType,
 inline void AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType,
                                 BufferType>::push_swapper(MutexLockType &lock)
 {
+  if (cb_eof && rcvr->hasEof()) cb_eof(*this);
   lock.lock();
   if (rcvr->full() && sndr->empty()) // ready to swap if sndr is empty
   {
-    swap_threadunsafe();
-    cv_swap.notify_one(); // notify sndr its buffer is now available
+    lock.unlock();
+    swap();
   }
 }
 
@@ -463,8 +484,8 @@ inline void AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType,
   lock.lock();
   if (sndr->empty() && (rcvr->full() || rcvr->hasEof())) // ready to swap
   {
-    swap_threadunsafe();
-    cv_swap.notify_one(); // let receiver know it received empty buffer
+    lock.unlock();
+    swap();
   }
 }
 
@@ -504,8 +525,12 @@ template <typename MutexType, typename CondVarType, typename MutexLockType,
 inline void
 AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType>::swap()
 {
+  if (cb_swap) cb_swap(*this);
   MutexLockType lock(mutex);
   swap_threadunsafe();
+
+  // call callback if specified
+  lock.unlock();
 }
 
 template <typename MutexType, typename CondVarType, typename MutexLockType,
@@ -516,6 +541,8 @@ inline void AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType,
   std::swap(rcvr, sndr);
   rcvr->clear(); // make sure new rcvr buffer is empty
   for (auto slave : slaves) slave->swap();
+
+  cv_swap.notify_one(); // notify sndr its buffer is now available
 }
 
 } // namespace ffmpeg
