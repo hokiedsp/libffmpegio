@@ -33,6 +33,9 @@ class ReaderMT : public Reader<BufferType>, private ThreadBase
    */
   bool read_next_packet();
 
+  void pause() override;
+  void resume() override;
+
   private:
   // kill buffers
   void kill();
@@ -41,8 +44,6 @@ class ReaderMT : public Reader<BufferType>, private ThreadBase
    * \brief Worker thread function to read frames and stuff buffers
    */
   void thread_fcn() override;
-  void pause() override;
-  void resume() override;
 };
 
 template <typename BufferType> void ReaderMT<BufferType>::flush()
