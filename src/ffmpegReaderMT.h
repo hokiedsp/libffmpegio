@@ -13,7 +13,7 @@ class ReaderMT : public Reader<BufferType>, private ThreadBase
 {
   public:
   ReaderMT(const std::string &url = "") : Reader<BufferType>(url) {}
-  ~ReaderMT() { kill(); } // may need to clean up filtergraphs
+  virtual ~ReaderMT() { kill(); } // may need to clean up filtergraphs
 
   void closeFile();
 
