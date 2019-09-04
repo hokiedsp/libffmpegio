@@ -30,7 +30,7 @@ class AVFrameQueue : public IAVFrameBuffer
 
   AVFrameQueue(const AVFrameQueue &that)
       : src(that.src), dst(that.dst), dynamic(that.dynamic),
-        que(that.que.size())
+        que(that.que.size()), killnow(that.killnow)
   {
     std::transform(that.que.begin(), that.que.end(), que.begin(),
                    [](const QueData &src) -> QueData {
@@ -51,6 +51,7 @@ class AVFrameQueue : public IAVFrameBuffer
     src = std::move(that.src);
     dst = std::move(that.dst);
     dynamic = std::move(that.dynamic);
+    killnow = that.killnow.load();
     int64_t Iwr = that.wr - that.que.begin();
     int64_t Ird = that.rd - that.que.begin();
     que = std::move(that.que);
