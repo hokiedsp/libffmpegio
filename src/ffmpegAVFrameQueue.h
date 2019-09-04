@@ -351,15 +351,29 @@ class AVFrameQueue : public IAVFrameBuffer
       int64_t Iwr = wr - que.begin();
       int64_t Ird = rd - que.begin();
 
-      if (wr->populated)
-        ++Iwr; // if que was full, set writer to the new element
-      if (rd > wr)
+      bool adj_wr = wr->populated;
+      if (adj_wr) // writer caught up with reader
+      {
+        if (Iwr) // at non-zero position, adjust reader
+        {
+          ++Ird;
+          adj_wr = false;
+        }
+        else
+        {
+          wr = que.end();
+          Iwr = que.size(); // at front, append at the end
+        }
+      }
+      else if (rd > wr)
+      {
         ++Ird; // if reader is ahead, offset must account for the new element
+      }
 
-      que.insert(wr + 1, {av_frame_alloc(), false, false});
+      que.insert(wr, {av_frame_alloc(), false, false});
 
       rd = que.begin() + Ird;
-      wr = que.begin() + Iwr;
+      wr = adj_wr ? (que.end() - 1) : (que.begin() + Iwr);
     }
   }
 
