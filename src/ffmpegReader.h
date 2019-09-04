@@ -698,7 +698,7 @@ template <typename AVFrameQue>
 inline size_t Reader<AVFrameQue>::getNumBufferedFrames(const std::string &spec)
 {
   if (!active || file.atEndOfFile()) return 0;
-  return bufs.at(file.getStreamId(spec)).size();
+  return get_buf(spec).size();
 }
 
 template <typename AVFrameQue>
