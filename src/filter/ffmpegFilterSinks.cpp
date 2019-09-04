@@ -44,6 +44,7 @@ int SinkBase::processFrame()
 {
   if (!ena) return AVERROR_EOF;
   AVFrame *frame = sink->peekToPush();
+  if (!frame) return AVERROR_EXIT; // thread termination issued
   int ret = av_buffersink_get_frame(context, frame);
 
   if (ret != AVERROR(EAGAIN)) // only push if frame was ready

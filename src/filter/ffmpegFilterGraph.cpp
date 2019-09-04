@@ -766,6 +766,10 @@ int Graph::processFrame()
           ++nb_frames; // if success, set the flag to indicate the arrival
         if (noframe) noframe = false;
       }
+      else if (ret == AVERROR_EXIT)
+      {
+        break; // buffer has been killed
+      }
       else if (ret != AVERROR(EAGAIN))
       {
         throw Exception("[ffmpeg::filter::Graph::runOnce] Failed to "
