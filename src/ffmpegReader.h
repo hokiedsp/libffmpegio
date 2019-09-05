@@ -75,6 +75,11 @@ template <typename AVFrameQue> class Reader
   bool atEndOfStream(int stream_id);
 
   size_t getStreamCount() { return file.getNumberOfStreams(); }
+  size_t getActiveStreamCount()
+  {
+    return file.getNumberOfActiveStreams() - filter_inbufs.size() +
+           filter_outbufs.size();
+  }
 
   int getStreamId(const int stream_id, const int related_stream_id = -1) const;
   int getStreamId(const AVMediaType type,
