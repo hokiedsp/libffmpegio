@@ -371,7 +371,7 @@ std::string Graph::getNextUnassignedSink(const std::string &last,
   auto out = last.size() ? ++outputs.find(last) : outputs.begin();
   out = std::find_if(out, outputs.end(), [any_media, type](auto &sinkinfo) {
     return (!sinkinfo.second.buf &&
-            (any_media || sinkinfo.second.filter->getMediaType() == type));
+            (any_media || sinkinfo.second.type == type));
   });
   return out != outputs.end() ? out->first : "";
 }
