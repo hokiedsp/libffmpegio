@@ -82,7 +82,7 @@ class SinkBase : public EndpointBase,
    *        if available output it to its sink buffer.
    * \returns True if new frame
    */
-  virtual int processFrame();
+  int processFrame();
   // virtual int processFrame(const std::chrono::milliseconds &rel_time);
 
   virtual void blockTillBufferReady() { sink->blockTillReadyToPush(); }
@@ -94,6 +94,9 @@ class SinkBase : public EndpointBase,
   virtual bool enabled() const { return ena; };
 
   protected:
+
+  AVFrame *frame; // buffer
+
   IAVFrameSinkBuffer *sink;
   bool ena;
 

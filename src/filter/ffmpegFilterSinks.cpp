@@ -19,13 +19,14 @@ using namespace ffmpeg::filter;
 SinkBase::SinkBase(Graph &fg, IAVFrameSinkBuffer &buf)
     : EndpointBase(fg), sink(&buf), ena(false), synced(false)
 {
+  frame = av_frame_alloc();
+  if (!frame)
+    throw Exception("Failed to allocate AVFrame buffer for a sink filter.");
 }
-SinkBase::~SinkBase()
-{
-}
+SinkBase::~SinkBase() {}
 
 AVFilterContext *SinkBase::configure(const std::string &name)
-{ 
+{
   ena = true;
   return configure_prefilter(false);
 }
@@ -43,17 +44,21 @@ void SinkBase::link(AVFilterContext *other, const unsigned otherpad,
 int SinkBase::processFrame()
 {
   if (!ena) return AVERROR_EOF;
-  AVFrame *frame = sink->peekToPush();
-  if (!frame) return AVERROR_EXIT; // thread termination issued
   int ret = av_buffersink_get_frame(context, frame);
 
-  if (ret != AVERROR(EAGAIN)) // only push if frame was ready
+  if (ret >= 0)
   {
-    ena = (ret != AVERROR_EOF);
-    if (ena)
-      sink->push(); // new frame already placed, complete the transaction
-    else
-      sink->push(nullptr); // push EOF
+    sink->push(frame); // new frame already placed, complete the transaction
+    av_frame_unref(frame);
+  }
+  else if (ret == AVERROR_EOF)
+  {
+    ena = true;
+    sink->push(nullptr);
+  }
+  else if (ret != AVERROR(EAGAIN)) // only push if frame was ready
+  {
+    throw Exception(ret);
   }
   return ret;
 }
