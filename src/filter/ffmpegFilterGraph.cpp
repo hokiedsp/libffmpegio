@@ -730,7 +730,7 @@ int Graph::processFrame()
   for (auto src = inputs.begin(); src != inputs.end(); ++src)
   {
     // if buffer is empty, skip
-    if (src->second.buf->empty()) continue;
+    if (!src->second.buf->readyToPop()) continue;
 
     // process an incoming frame (if any)
     int ret = src->second.filter
@@ -754,9 +754,6 @@ int Graph::processFrame()
     for (auto out = outputs.begin(); out != outputs.end();
          ++out) // for each buffer
     {
-      // if output buffer is full, cannot retrieve more frames
-      if (out->second.buf->full()) break;
-
       SinkBase *sink = out->second.filter;
       int ret = sink->processFrame(); // calls av_buffersink_get_frame() if
                                       // frame avail
