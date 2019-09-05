@@ -370,7 +370,9 @@ private:
 
   SourceBase &getSource(const std::string &name)
   {
-    return *inputs.at(name).filter;
+    auto fp = inputs.at(name).filter;
+    if (!fp) throw Exception(name + " source has not been configured yet.");
+    return *fp;
   }
 
   bool isSink(const std::string &name)
@@ -380,7 +382,9 @@ private:
 
   SinkBase &getSink(const std::string &name)
   {
-    return *outputs.at(name).filter;
+    auto fp = outputs.at(name).filter;
+    if (!fp) throw Exception(name + " sink has not been configured yet.");
+    return *fp;
   }
 
   // avfilter_graph_send_command, avfilter_graph_queue_command
@@ -394,9 +398,7 @@ private:
     // create new filter
     switch (type)
     {
-    case AVMEDIA_TYPE_VIDEO:
-      ep = new VEP(*this, buf);
-      break;
+    case AVMEDIA_TYPE_VIDEO: ep = new VEP(*this, buf); break;
     case AVMEDIA_TYPE_AUDIO: ep = new AEP(*this, buf); break;
     default:
       ep = NULL;
