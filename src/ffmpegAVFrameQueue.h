@@ -355,14 +355,10 @@ class AVFrameQueue : public IAVFrameBuffer
       if (adj_wr) // writer caught up with reader
       {
         if (Iwr) // at non-zero position, adjust reader
-        {
-          ++Ird;
-          adj_wr = false;
-        }
-        else
+        { ++Ird; } else // at front, append at the end
         {
           wr = que.end();
-          Iwr = que.size(); // at front, append at the end
+          Iwr = que.size(); 
         }
       }
       else if (rd > wr)
@@ -373,7 +369,7 @@ class AVFrameQueue : public IAVFrameBuffer
       que.insert(wr, {av_frame_alloc(), false, false});
 
       rd = que.begin() + Ird;
-      wr = adj_wr ? (que.end() - 1) : (que.begin() + Iwr);
+      wr = que.begin() + Iwr;
     }
   }
 
