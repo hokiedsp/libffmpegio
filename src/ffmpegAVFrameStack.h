@@ -18,19 +18,19 @@ class AVFrameStack : public IAVFrameBuffer
   AVFrameStack(size_t N = 0)
       : killnow(false), dynamic(N == 0), src(nullptr), dst(nullptr)
   {
-    // set read/write pointers to the beginning
-    p = stk.begin();
-
     // insert the first frame
     expand();
     if (!dynamic) // if fixed queue size, expand to the desired size
       for (int i = 1; i < N; ++i) expand();
 
+    // set read/write pointers to the beginning
+    p = stk.begin();
+
   } // queue size
 
   AVFrameStack(const AVFrameStack &that)
-      : src(that.src), dst(that.dst), dynamic(that.dynamic),
-        stk(that.stk.size())
+      : killnow(that.killnow), src(that.src), dst(that.dst),
+        dynamic(that.dynamic), stk(that.stk.size())
   {
     std::transform(that.stk.begin(), that.stk.end(), stk.begin(),
                    [](const Data_s &src) -> Data_s {
@@ -50,6 +50,7 @@ class AVFrameStack : public IAVFrameBuffer
     src = std::move(that.src);
     dst = std::move(that.dst);
     dynamic = std::move(that.dynamic);
+    killnow = that.killnow.load();
     int64_t I = that.p - that.stk.begin();
     stk = std::move(that.stk);
     p = stk.begin() + I;
@@ -68,6 +69,7 @@ class AVFrameStack : public IAVFrameBuffer
     src = that.src;
     dst = that.dst;
     dynamic = that.dynamic;
+    killnow = that.killnow;
     stk(that.stk.size());
     std::transform(that.stk.begin(), that.stk.end(), stk.begin(),
                    [](const Data_s &src) -> Data_s {
@@ -146,7 +148,7 @@ class AVFrameStack : public IAVFrameBuffer
   bool empty() noexcept
   {
     MutexLockType lock(mutex);
-    return stk.empty() || stk.front().populated;
+    return stk.empty() || !stk.front().populated;
   }
   bool full() noexcept
   {
@@ -190,9 +192,9 @@ class AVFrameStack : public IAVFrameBuffer
     MutexLockType lock(mutex);
     cv.wait(lock, [this] { return killnow || readyToPush_threadunsafe(); });
     if (killnow) return nullptr;
-    if (p->populated)
+    if (p + 1 == stk.end())
       throw_or_expand(); // expand if allowed or throws overflow exception
-    return p->frame;
+    return (p + 1)->frame;
   }
 
   void push()
@@ -303,11 +305,8 @@ class AVFrameStack : public IAVFrameBuffer
   {
     MutexLockType lock(mutex);
     cv.wait(lock, [this] { return killnow || readyToPop_threadunsafe(); });
-
-    if (eof() || killnow)
-      return nullptr;
-    else
-      return p->frame;
+    return (killnow || stk.empty() || !p->populated || p->eof) ? nullptr
+                                                               : p->frame;
   }
 
   void pop()
@@ -339,18 +338,12 @@ class AVFrameStack : public IAVFrameBuffer
     else
     {
       int64_t I = p - stk.begin();
-
-      // if stk is full, set access point to the new element as only push
-      // operation calls expand under that condition
-      if (p->populated) ++I;
-
       stk.push_back({av_frame_alloc(), false, false});
-
       p = stk.begin() + I;
     }
   }
 
-  bool readyToPush_threadunsafe() { return dynamic || !p->populated; }
+  bool readyToPush_threadunsafe() { return dynamic || p + 1 != stk.end(); }
   bool readyToPop_threadunsafe() // declared in AVFrameSourceBase
   {
     return p->populated;
@@ -363,8 +356,11 @@ class AVFrameStack : public IAVFrameBuffer
   void push_threadunsafe(AVFrame *frame)
   {
     // if buffer is not available (not yet read, caught up with p ptr)
-    if (p->populated)
+    if (p + 1 == stk.end())
       throw_or_expand(); // expand if allowed or throws overflow exception
+
+    // increment the access point
+    if (p->populated) ++p;
 
     // copy the frame data
     if (frame) av_frame_ref(p->frame, frame);
@@ -373,23 +369,17 @@ class AVFrameStack : public IAVFrameBuffer
     // set the written flag
     p->populated = true;
 
-    // increment write iterator
-    if (p != stk.end() - 1) ++p;
-
     // notify the source-end for the arrival of new data
     cv.notify_one();
   }
 
   void mark_populated_threadunsafe()
   {
-    // if buffer is not available
-    if (p->populated) throw Exception("Already populated.");
+    // increment the access point
+    if (p->populated) ++p;
 
     // set the written flag
     p->populated = true;
-
-    // increment access point
-    if (p != stk.end() - 1) ++p;
 
     // notify the source-end for the arrival of new data
     cv.notify_one();
