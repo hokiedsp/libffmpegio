@@ -165,6 +165,7 @@ class AVFrameQueue : public IAVFrameBuffer
     return wr->populated;
   }
 
+  size_t capacity() const { return dynamic ? 0 : que.size(); }
   bool isDynamic() const { return dynamic; }
 
   // does not support master-slave mode
@@ -331,6 +332,27 @@ class AVFrameQueue : public IAVFrameBuffer
     if (!killnow) pop_threadunsafe(nullptr, nullptr);
   }
 
+  AVFrame *peekLastPushed()
+  {
+    MutexLockType lock(mutex);
+    if (que.empty() || !rd->populated) return nullptr;
+    auto wrlast = (wr > que.begin()) ? wr - 1 : que.begin();
+    return (wrlast->eof) ? nullptr : wrlast->frame;
+  }
+
+  void popLastPushed()
+  {
+    if (que.empty()) return;
+    MutexLockType lock(mutex);
+    if (!rd->populated) return;
+    wr = (wr > que.begin()) ? wr - 1 : que.begin();
+    if (wr->eof)
+      wr->eof = false;
+    else
+      av_frame_unref(wr->frame);
+    wr->populated = false;
+  }
+
   private:
   void throw_or_expand()
   {
@@ -354,11 +376,11 @@ class AVFrameQueue : public IAVFrameBuffer
       bool adj_wr = wr->populated;
       if (adj_wr) // writer caught up with reader
       {
-        if (Iwr) // at non-zero position, adjust reader
+        if (Iwr)        // at non-zero position, adjust reader
         { ++Ird; } else // at front, append at the end
         {
           wr = que.end();
-          Iwr = que.size(); 
+          Iwr = que.size();
         }
       }
       else if (rd > wr)

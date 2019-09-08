@@ -46,6 +46,7 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
   bool full() noexcept;
   bool hasEof() noexcept; // true if buffer contains EOF
 
+  size_t capacity() const { return rcvr->capacity(); }
   bool isDynamic() const { return rcvr->isDynamic(); }
   bool linkable() const { return true; }
   void follow(IAVFrameSinkBuffer &master);
@@ -78,8 +79,17 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
   }
 
   template <typename CallbackType> void setBeforeSwapCallback(CallbackType cb)
+
+  AVFrame *peekLastPushed()
   {
-    cb_swap = cb;
+    MutexLockType lock(mutex);
+    return rcvr->empty() ? nullptr : rcvr->peekLastPushed();
+  }
+
+  void popLastPushed()
+  {
+    MutexLockType lock(mutex);
+    rcvr->popLastPushed();
   }
 
   private:

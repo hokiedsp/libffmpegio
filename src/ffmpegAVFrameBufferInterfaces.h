@@ -32,6 +32,7 @@ class IAVFrameSinkBuffer
   virtual bool full() noexcept = 0;
   virtual bool hasEof() noexcept = 0; // true if buffer contains EOF
 
+  virtual size_t capacity() const = 0; // capacity of buffer, 0 if dynamic
   virtual bool isDynamic() const = 0; // true if buffer size is dynamically set
   virtual bool linkable() const = 0;
   virtual void follow(IAVFrameSinkBuffer &master) = 0;
@@ -48,6 +49,9 @@ class IAVFrameSinkBuffer
 
   virtual AVFrame *peekToPush() = 0;
   virtual void push() = 0;
+
+  virtual AVFrame *peekLastPushed() = 0; // null if empty or eof
+  virtual void popLastPushed() = 0;
 };
 
 class IAVFrameSourceBuffer

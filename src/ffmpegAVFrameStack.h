@@ -155,6 +155,7 @@ class AVFrameStack : public IAVFrameBuffer
     return stk.back().populated;
   }
 
+  size_t capacity() const { return dynamic ? 0 : stk.size(); }
   bool isDynamic() const { return dynamic; }
 
   // does not support master-slave mode
@@ -316,6 +317,9 @@ class AVFrameStack : public IAVFrameBuffer
             [this]() -> bool { return killnow || readyToPop_threadunsafe(); });
     if (!killnow) pop_threadunsafe(nullptr, nullptr);
   }
+
+  AVFrame *peekLastPushed() { return peekToPop(); }
+  void popLastPushed() { pop(); }
 
   private:
   void throw_or_expand()
