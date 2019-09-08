@@ -27,6 +27,9 @@ class InputStream : virtual public BaseStream, public IAVFrameSource
   InputStream(InputFormat &reader, int stream_id, IAVFrameSinkBuffer &buf);
   virtual ~InputStream();
 
+  using BaseStream::getMediaType;
+  using BaseStream::getTimeBase;
+
   virtual bool ready() { return ctx && sink; }
 
   virtual void open(AVStream *st);
