@@ -125,15 +125,15 @@ class AVFrameStack : public IAVFrameBuffer
   void clear()
   {
     MutexLockType lock(mutex);
-    for (auto it = stk.begin(); it != stk.end(); ++it)
+    for (auto &fdata : stk)
     {
-      if (it->populated)
+      if (fdata.populated)
       {
-        it->populated = false;
-        if (it->eof)
-          it->eof = false;
+        fdata.populated = false;
+        if (fdata.eof)
+          fdata.eof = false;
         else
-          av_frame_unref(it->frame);
+          av_frame_unref(fdata.frame);
       }
     }
     p = stk.begin();
@@ -400,6 +400,11 @@ class AVFrameStack : public IAVFrameBuffer
     {
       p->eof = false;
       p->populated = false;
+      if (p == stk.begin())
+      {
+        cv.notify_one();
+        return;
+      }
       --p;
     }
 
@@ -412,7 +417,9 @@ class AVFrameStack : public IAVFrameBuffer
     if (eof) // if eof already reached, mark this element as eof
       p->eof = true;
     else
-      (p--)->populated = false;
+      p->populated = false;
+
+    if (p != stk.begin()) ++p;
 
     // notify the sink-end for slot opening
     cv.notify_one();
