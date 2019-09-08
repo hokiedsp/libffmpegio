@@ -135,6 +135,13 @@ class InputFormat
     return get_timestamp<Chrono_t>(T, {1, AV_TIME_BASE});
   }
 
+  int64_t getDurationPts(AVRational tb = {0, 0})
+  {
+    return (tb.den == 0 && tb.num == 0)
+               ? fmt_ctx->duration
+               : av_rescale_q(fmt_ctx->duration, {1, AV_TIME_BASE}, tb);
+  }
+
   template <typename Chrono_t = av_duration> void seek(const Chrono_t ts)
   {
     if (!isFileOpen()) throw Exception("No file open.");
@@ -147,6 +154,38 @@ class InputFormat
                                      seek_timestamp, 0) < 0)
       throw Exception("Could not seek to position: " +
                       std::to_string(seek_timestamp));
+  }
+
+  void seekPts(int64_t ts, const AVRational tb = {0, 0})
+  {
+    int ret;
+    if ((tb.den == 0 && tb.num == 0) || (tb.den == AV_TIME_BASE && tb.num == 1))
+    {
+      // use the default time-base
+      ret = avformat_seek_file(fmt_ctx, -1, INT64_MIN, ts, ts, 0);
+    }
+    else
+    {
+      bool found = false;
+      for (auto &s : streams)
+      {
+        if (!av_cmp_q(tb, s.second->getTimeBase()))
+        {
+          ret = avformat_seek_file(fmt_ctx, s.second->getId(), INT64_MIN, ts,
+                                   ts, 0);
+          found = true;
+          break;
+        }
+      }
+      if (!found)
+      {
+        int64_t fmt_ts = av_rescale_q(ts, tb, {1, AV_TIME_BASE});
+        ret = avformat_seek_file(fmt_ctx, -1, INT64_MIN, fmt_ts, fmt_ts, 0);
+      }
+    }
+
+    if (ret < 0)
+      throw Exception("Could not seek to position: " + std::to_string(ts));
   }
 
   int getStreamId(const int stream_id, const int related_stream_id = -1) const;
