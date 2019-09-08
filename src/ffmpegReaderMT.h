@@ -48,14 +48,16 @@ class ReaderMT : public Reader<BufferType>, private ThreadBase
 
 template <typename BufferType> void ReaderMT<BufferType>::flush()
 {
+  bool isactive = !isPaused();
+
   // stop thread before seek
-  pause();
+  if (isactive) pause();
 
   // flush the buffers
   Reader<BufferType>::flush();
 
   // restart thread
-  resume();
+  if (isactive) resume();
 }
 
 template <typename BufferType>
