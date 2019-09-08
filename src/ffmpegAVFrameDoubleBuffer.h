@@ -73,11 +73,6 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
 
   bool eof();
 
-  template <typename CallbackType> void setReachedEofCallback(CallbackType cb)
-  {
-    cb_eof = cb;
-  }
-
   template <typename CallbackType> void setPreSwapCallback(CallbackType cb)
   {
     cb_preswap = cb;
@@ -123,8 +118,6 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
   MutexType mutex;
   CondVarType cv_swap;
   std::atomic_bool killnow;
-
-  std::function<void(AVFrameDoubleBuffer &)> cb_eof;
 
   std::function<void(AVFrameDoubleBuffer &)> cb_preswap;
 
@@ -373,9 +366,9 @@ template <typename MutexType, typename CondVarType, typename MutexLockType,
 inline void AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType,
                                 BufferType>::push_swapper(MutexLockType &lock)
 {
-  if (cb_eof && rcvr->hasEof()) cb_eof(*this);
   lock.lock();
-  if (rcvr->full() && sndr->empty()) // ready to swap if sndr is empty
+  if ((rcvr->hasEof() || rcvr->full()) &&
+      sndr->empty()) // ready to swap if sndr is empty
   {
     lock.unlock();
     swap();
