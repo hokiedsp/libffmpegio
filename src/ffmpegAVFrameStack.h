@@ -143,7 +143,7 @@ class AVFrameStack : public IAVFrameBuffer
   size_t size() noexcept
   {
     MutexLockType lock(mutex);
-    return p - stk.begin();
+    return 1 + (p - stk.begin());
   }
   bool empty() noexcept
   {
@@ -277,14 +277,16 @@ class AVFrameStack : public IAVFrameBuffer
 
   bool eof()
   {
-    if (empty()) return false;
+    if (stk.empty()) return false;
     MutexLockType lock(mutex);
-    return p->eof && size() == 1;
+    return p->populated && p->eof && size() == 1;
   }
 
   bool hasEof() noexcept // true if buffer contains EOF
   {
-    return eof();
+    if (stk.empty()) return false;
+    MutexLockType lock(mutex);
+    return p->populated && p->eof;
   }
 
   bool tryToPop(AVFrame *frame, bool *eof)
