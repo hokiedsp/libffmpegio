@@ -78,7 +78,14 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
     cb_eof = cb;
   }
 
-  template <typename CallbackType> void setBeforeSwapCallback(CallbackType cb)
+  template <typename CallbackType> void setPreSwapCallback(CallbackType cb)
+  {
+    cb_preswap = cb;
+  }
+  template <typename CallbackType> void setPostSwapCallback(CallbackType cb)
+  {
+    cb_postswap = cb;
+  }
 
   AVFrame *peekLastPushed()
   {
@@ -117,13 +124,11 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
   CondVarType cv_swap;
   std::atomic_bool killnow;
 
-  std::function<void(
-      AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType> &)>
-      cb_eof;
+  std::function<void(AVFrameDoubleBuffer &)> cb_eof;
 
-  std::function<void(
-      AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType> &)>
-      cb_swap;
+  std::function<void(AVFrameDoubleBuffer &)> cb_preswap;
+
+  std::function<void(AVFrameDoubleBuffer &)> cb_postswap;
 };
 
 // Predefined concrete types
@@ -535,7 +540,6 @@ template <typename MutexType, typename CondVarType, typename MutexLockType,
 inline void
 AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType>::swap()
 {
-  if (cb_swap) cb_swap(*this);
   MutexLockType lock(mutex);
   swap_threadunsafe();
 
@@ -548,9 +552,11 @@ template <typename MutexType, typename CondVarType, typename MutexLockType,
 inline void AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType,
                                 BufferType>::swap_threadunsafe()
 {
+  if (cb_preswap) cb_preswap(*this);
   std::swap(rcvr, sndr);
   rcvr->clear(); // make sure new rcvr buffer is empty
   for (auto slave : slaves) slave->swap();
+  if (cb_postswap) cb_postswap(*this);
 
   cv_swap.notify_one(); // notify sndr its buffer is now available
 }
