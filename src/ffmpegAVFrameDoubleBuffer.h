@@ -533,11 +533,16 @@ template <typename MutexType, typename CondVarType, typename MutexLockType,
 inline void
 AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType>::swap()
 {
+  if (cb_preswap) cb_preswap(*this);
   MutexLockType lock(mutex);
   swap_threadunsafe();
-
-  // call callback if specified
-  lock.unlock();
+  if (cb_postswap)
+  {
+    lock.unlock();
+    cb_postswap(*this);
+    lock.lock();
+  }
+  cv_swap.notify_one(); // notify sndr its buffer is now available
 }
 
 template <typename MutexType, typename CondVarType, typename MutexLockType,
@@ -545,13 +550,9 @@ template <typename MutexType, typename CondVarType, typename MutexLockType,
 inline void AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType,
                                 BufferType>::swap_threadunsafe()
 {
-  if (cb_preswap) cb_preswap(*this);
   std::swap(rcvr, sndr);
   rcvr->clear(); // make sure new rcvr buffer is empty
   for (auto slave : slaves) slave->swap();
-  if (cb_postswap) cb_postswap(*this);
-
-  cv_swap.notify_one(); // notify sndr its buffer is now available
 }
 
 } // namespace ffmpeg
