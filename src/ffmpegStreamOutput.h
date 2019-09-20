@@ -50,11 +50,6 @@ public:
         }
     }
 
-    virtual int reset()
-    {
-        avcodec_flush_buffers(ctx);
-        return 0;
-    } // reset decoder states
     virtual int OutputStream::processFrame(AVPacket *packet);
 
 protected:

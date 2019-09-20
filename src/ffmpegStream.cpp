@@ -35,7 +35,7 @@ void BaseStream::close()
   ctx = NULL;
 }
 
-int BaseStream::reset() { return avcodec_send_packet(ctx, NULL); }
+void BaseStream::reset() { avcodec_flush_buffers(ctx); }
 
 ////////////////////////////
 

@@ -40,7 +40,7 @@ class BaseStream
 
   virtual void close();
 
-  virtual int reset(); // reset decoder states
+  virtual void reset(); // reset decoder states
 
   const AVCodec *getAVCodec() const { return ctx ? ctx->codec : NULL; }
   std::string getCodecName() const
