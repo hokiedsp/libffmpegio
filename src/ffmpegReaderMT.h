@@ -138,6 +138,7 @@ template <typename BufferType> void ReaderMT<BufferType>::thread_fcn()
         thread_guard.unlock();
         file.readNextPacket();
         if (filter_graph) filter_graph->processFrame();
+        if (file.atEndOfFile()) status = PAUSE_RQ;
         thread_ready.notify_one();
         thread_guard.lock();
       }
