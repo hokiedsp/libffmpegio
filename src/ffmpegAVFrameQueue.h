@@ -145,6 +145,18 @@ class AVFrameQueue : public IAVFrameBuffer
     killnow = false;
   }
 
+  void clrEof() noexcept // removes eof in buffer
+  {
+    MutexLockType lock(mutex);
+    auto &last = ((wr == que.begin()) ? que.end() : wr) - 1;
+    if (last->populated && last->eof)
+    {
+      last->populated = false;
+      last->eof = false;
+      wr = last;
+    }
+  }
+
   size_t size() noexcept
   {
     MutexLockType lock(mutex);

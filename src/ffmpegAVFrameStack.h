@@ -140,6 +140,17 @@ class AVFrameStack : public IAVFrameBuffer
     killnow = false;
   }
 
+  void clrEof() noexcept // removes eof in buffer
+  {
+    MutexLockType lock(mutex);
+    if (p->populated && p->eof)
+    {
+      p->populated = false;
+      p->eof = false;
+      if (p != stk.begin()) p -= 1;
+    }
+  }
+
   size_t size() noexcept
   {
     MutexLockType lock(mutex);

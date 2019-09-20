@@ -27,6 +27,7 @@ class IAVFrameSinkBuffer
   virtual void clrSrc() = 0;
 
   virtual void clear() = 0;
+  virtual void clrEof() noexcept = 0; // removes eof in buffer
   virtual size_t size() noexcept = 0;
   virtual bool empty() noexcept = 0;
   virtual bool full() noexcept = 0;
