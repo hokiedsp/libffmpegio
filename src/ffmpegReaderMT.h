@@ -9,7 +9,7 @@ namespace ffmpeg
 
 // multi-threaded media file reader
 template <typename BufferType>
-class ReaderMT : public Reader<BufferType>, private ThreadBase
+class ReaderMT : public Reader<BufferType>, protected ThreadBase
 {
   public:
   ReaderMT(const std::string &url = "") : Reader<BufferType>(url) {}
