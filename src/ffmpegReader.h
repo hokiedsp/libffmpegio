@@ -232,6 +232,12 @@ template <typename AVFrameQue> class Reader
                        [this](auto &buf) { return buf.second.readyToPush(); });
   }
 
+  virtual int64_t get_pts(AVFrame *frame)
+  {
+    return frame->best_effort_timestamp >= 0 ? frame->best_effort_timestamp
+                                             : frame->pts;
+  }
+
   // input media file
   InputFormat file;
 
@@ -712,17 +718,21 @@ inline Chrono_t Reader<AVFrameQue>::getTimeStamp()
 {
   if (!active) throw Exception("Activate before read a frame.");
 
-  Chrono_t T = getDuration();
+  if (prim_buf.size()) { return get_time_stamp<Chrono_t>(get_buf(prim_buf)); }
+  else
+  {
+    Chrono_t T = getDuration();
 
-  // find the minimum timestamp of all active streams
-  auto reduce_op = [T](const Chrono_t &t,
-                       const std::pair<std::string, AVFrameQue> &buf) {
-    return std::min(T, get_time_stamp<Chrono_t>(buf.second));
-  };
-  Chrono_t t =
-      std::reduce(bufs.begin(), bufs.end(), Chrono_t::max(), reduce_op);
-  return std::reduce(filter_outbufs.begin(), filter_outbufs.end(), t,
-                     reduce_op);
+    // find the minimum timestamp of all active streams
+    auto reduce_op = [T](const Chrono_t &t,
+                         const std::pair<std::string, AVFrameQue> &buf) {
+      return std::min(T, get_time_stamp<Chrono_t>(buf.second));
+    };
+    Chrono_t t =
+        std::reduce(bufs.begin(), bufs.end(), Chrono_t::max(), reduce_op);
+    return std::reduce(filter_outbufs.begin(), filter_outbufs.end(), t,
+                       reduce_op);
+  }
 }
 
 template <typename AVFrameQue>
@@ -748,14 +758,14 @@ inline Chrono_t Reader<AVFrameQue>::get_time_stamp(AVFrameQue &buf)
   // if no frame avail at this time, then it's due to the primary buffer full
   if (!(buf.readyToPop() || (read_next_packet() && buf.readyToPop())))
   {
-    if (ready_to_read()) throw Exception("Failed to read current time stamp.");
-    return get_time_stamp<Chrono_t>(get_buf(prim_buf));
+    if (!ready_to_read() && prim_buf.empty()) throw Exception("Failed to read current time stamp.");
+    AVFrameQue &pbuf = get_buf(prim_buf);
+    if (&pbuf==&buf) throw Exception("Failed to read current time stamp.");
+    return get_time_stamp<Chrono_t>(pbuf);
   }
 
   AVFrame *frame = buf.peekToPop();
-  return (frame) ? get_timestamp<Chrono_t>(frame->best_effort_timestamp >= 0
-                                               ? frame->best_effort_timestamp
-                                               : frame->pts,
+  return (frame) ? get_timestamp<Chrono_t>(get_pts(frame),
                                            buf.getSrc().getTimeBase())
                  : getDuration();
 }
