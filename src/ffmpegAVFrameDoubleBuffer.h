@@ -47,6 +47,9 @@ class AVFrameDoubleBuffer : public IAVFrameBuffer
   bool hasEof() noexcept; // true if buffer contains EOF
   void clrEof() noexcept; // removes eof in buffer
 
+  void clearRcvr();
+  void clearSndr();
+  
   size_t capacity() const { return rcvr->capacity(); }
   bool isDynamic() const { return rcvr->isDynamic(); }
   bool linkable() const { return true; }
@@ -210,6 +213,27 @@ AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType>::clear()
   killnow = false;
 }
 
+template <typename MutexType, typename CondVarType, typename MutexLockType,
+          typename BufferType>
+inline void
+AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType>::clearRcvr()
+{
+  MutexLockType lock(mutex);
+  rcvr->clear();
+  killnow = false;
+}
+
+template <typename MutexType, typename CondVarType, typename MutexLockType,
+          typename BufferType>
+inline void
+AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType, BufferType>::clearSndr()
+{
+  MutexLockType lock(mutex);
+  sndr->clear();
+  killnow = false;
+}
+
+template <typename MutexType, typename CondVarType, typename MutexLockType,
           typename BufferType>
 inline void AVFrameDoubleBuffer<MutexType, CondVarType, MutexLockType,
                                 BufferType>::clrEof() noexcept
