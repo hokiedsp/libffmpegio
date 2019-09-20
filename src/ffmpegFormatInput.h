@@ -148,6 +148,13 @@ class InputFormat
     int64_t seek_timestamp =
         std::chrono::duration_cast<av_duration>(ts).count();
 
+    // if already at eof, reset the decoders before clearing the flag
+    if (eof)
+    {
+      for (auto &s : streams) s.second->reset();
+      eof = false;
+    }
+
     // set new time
     // if filter graph changes frame rate -> convert it to the stream time
     if (int ret = avformat_seek_file(fmt_ctx, -1, INT64_MIN, seek_timestamp,
@@ -186,6 +193,13 @@ class InputFormat
 
     if (ret < 0)
       throw Exception("Could not seek to position: " + std::to_string(ts));
+    
+    // if already at eof, reset the decoders before clearing the flag
+    if (eof)
+    {
+      for (auto &s : streams) s.second->reset();
+      eof = false;
+    }
   }
 
   int getStreamId(const int stream_id, const int related_stream_id = -1) const;
